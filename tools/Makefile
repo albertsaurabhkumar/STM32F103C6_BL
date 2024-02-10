@@ -45,7 +45,7 @@ LDFLAGS = -T STM32F103C6_BL.ld -g3 -ggdb -Wl,-Map=$(BIN_DIR)/STM32F103C6_BL.map 
 TARGET = $(ROOT)/build/bin/$(PROJECT)
 
 #Makefile rules to build the project
-all: $(TARGET).elf objcopytohex objsize
+all: $(TARGET).elf objcopytohex objcopytobin objsize
 
 $(TARGET).elf:$(OBJ)
 	@echo Linking: $@
@@ -60,7 +60,7 @@ objsize:
 	@$(OBJSIZE) $(TARGET).elf
 
 objcopytohex:
-	@echo Generating .bin file....
+	@echo Generating .hex file....
 	@$(OBJCOPY) -O ihex $(TARGET).elf $(TARGET).hex
 
 objcopytobin:

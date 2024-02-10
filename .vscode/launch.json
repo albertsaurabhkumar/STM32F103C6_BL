@@ -7,12 +7,12 @@
             "name": "ST-Debug_BL",
             "request": "launch",
             "type": "cortex-debug",
-            "device": "STM32F101/F102/F103",
+            "device": "STM32F103",
             "interface": "swd",
             "runToEntryPoint": "Reset_Handler",
             "showDevDebugOutput": "none",
             "servertype": "stlink",
-            "svdPath": "${workspaceFolder}/tools/"
+            "svdFile": "${workspaceFolder}/tools/STM32F103.svd"
         }
     ]
 }
