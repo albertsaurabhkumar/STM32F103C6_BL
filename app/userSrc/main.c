@@ -15,6 +15,7 @@
 #define NEW_MSP 0x20002800
 
 typedef void (*voidFunc)(void);
+volatile uint32_t BootAppFlag __attribute__ ((section (".BootAppFlags")));
 volatile uint32_t dlyCnt;
 volatile uint32_t counter;
 uint32_t timeoutVar;
@@ -23,7 +24,6 @@ uint16_t pendingData;
 
 bool validAppAvailble;
 uint32_t i=0;
-uint8_t tempdata[1024];
 state_machin_t currstate;
 
 /************************ End the Global Variables **************************/
@@ -44,6 +44,7 @@ void JumpToApp() {
   uint32_t* jumpAddress = (uint32_t*)(APP_ADD);
   uint32_t* jumpAdd = (uint32_t*)(*jumpAddress);
   voidFunc jmpFn = (voidFunc)jumpAdd;
+  BootAppFlag = 0xA5A5A5A5;
   SCB_VTOR = (uint32_t)(VectorAdd);
   __set_MSP(NEW_MSP);
   jmpFn();
@@ -93,7 +94,7 @@ int main(void) {
   DataPkt_t tempDataPkt;
   //canTxStruct_t canTxPckt;
   //canRxStruct_t canRxPckt;
-  currstate = DownloadReq;
+  currstate = init;
   validAppAvailble = (*(uint32_t*)APP_ADD) != 0xFFFFFFFF;
   //uint8_t data[8]={1,2,3,4,5,6,7,8};
 
@@ -105,16 +106,47 @@ int main(void) {
   /* Erasing Application because expecting a application flashing */
   /* Erase from 24 -> 08006000 sector to 31 */
 
+  if((BootAppFlag == 0xDEADDEAD) | ((*(uint32_t*)VectorAdd) != 0x20002800)) {
+    erase_application(APP_ADD);
+    BootAppFlag = 0xA5A5A5A5;
+  }
+
   while(1)
   {
-    // if(USART_SR(USART1_BASE) & USART_SR_RXNE) {
-    //  tempdata[i++] = usart_recv(USART1_BASE);
-    //  if(i%31==0){
-    //   usart_send(USART1,0x55);
-    //  }
-    // }
-
   switch(currstate) {
+
+    case init:
+    {
+      if(USART_SR(USART1_BASE) & USART_SR_RXNE) {
+      uint8_t temp = usart_recv(USART1);
+      if(temp == 'D') {
+       currstate = DownloadReq;                        /* Received the download request */
+      } else if(temp == 'R') {
+        currstate = ReadStatus;                        /* Received the request for Send Send Status */
+      } else if(temp == 'E'){
+        currstate = EraseApp;                          /* Request for erasing the application */
+      } else {
+        /* Do nothing */
+      }
+      }
+    }break;
+
+    case ReadStatus:
+    {
+      if(validAppAvailble) {
+        usart_send(USART1_BASE,1);
+      } else {
+        usart_send(USART1_BASE,3);
+      }
+      currstate = init;
+    }break;
+
+    case EraseApp:
+    {
+      erase_application(VectorAdd);
+      usart_send(USART1_BASE,0x96);
+      currstate = init;
+    }break;
 
     case DownloadReq:
     {
@@ -143,7 +175,6 @@ int main(void) {
       pendingData=DrequestPkt.totalSize;
       while (1)
       {
-
       if(USART_SR(USART1_BASE) & USART_SR_RXNE) {
       tempDataPkt = ReadDataPkt();
       if(tempDataPkt.pktype == dataPkt) {
@@ -175,14 +206,11 @@ int main(void) {
         currstate = DownloadReq;
       } else {
       //tempPkt.pktype = ackPkt;
-      validAppAvailble = (*(uint32_t*)APP_ADD) != 0xFFFFFFFF;
+      validAppAvailble = (*(uint32_t*)VectorAdd) == 0x20002800;
       }
     } break;
   }
-    /* Toggle the LED 10 times */
 
-    // gpio_toggle(GPIOC, GPIO13);
-    // delay(1000);
   /* if no uart packet available then jump to the application */
     if(validAppAvailble) {
       JumpToApp();

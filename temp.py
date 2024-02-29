@@ -4,7 +4,7 @@ import sys
 import binascii
 
 try:
-    ser = serial.Serial("COM3",timeout=45)  # open first serial port
+    ser = serial.Serial("COM3",timeout=5)  # open first serial port
 except(OSError,serial.SerialException):
     print("No Port Availble")
 
@@ -18,7 +18,7 @@ with open("./../STM32F103C6_App/build/bin/STM32F103C6_APP.bin", "rb") as f:
 f.close()
 
 dataTxCompleted =False
-currentState = 'ReqDownload'
+currentState = 'default'
 
 def recvAck() -> bytes:
     return ser.read(1)
@@ -71,17 +71,43 @@ while True:
                       else:
                            break
             f.close()
-
             currentState = 'done'
-            # dataTxCompleted = True
-    
+
         case 'done':
-            print("Transfer Done Exiting...")
-            break
+            print("Transfer Done Exiting...\n")
+            currentState = 'default'
 
-# while data:
-#     print(data)
-#     data = fw_image.to_bytes(4,"little")
+        case 'EraseApp':
+            if 0x96 ==ser.read(1):
+                print("Application Erase Success")
+            currentState = 'default'
 
-#     ser.write(i.encode('hex')))      # write a string
-# ser.close()             # close port
+        case 'ReadStatus':
+            temp = int.from_bytes(ser.read(1), "little")
+            if temp & 1:
+                if temp & 2:
+                    print("\nNo Valid App")
+                print(" In Bootloader\n")
+                
+            elif temp == 2:
+                print("\nIn Application\n")
+            else:
+                print("Error!")
+
+            currentState = 'default'
+    
+        case 'default':
+            inp = input("1: DW Request\n2: CPU Run Sta\n3: Erase App\n4: Exit\nEnter choice:")
+            match inp:
+                case '1':
+                    ser.write(b'D')
+                    currentState = 'ReqDownload'
+                case '2':
+                    ser.write(b'R')
+                    currentState = 'ReadStatus'
+                case '3':
+                    ser.write(b'E')
+                    currentState = 'EraseApp'
+                case '4':
+                    break
+ser.close()             # close port

@@ -11,7 +11,7 @@ ENTRY(Reset_Handler)
 MEMORY
 {
     VECTAB(rx): ORIGIN = 0x08000000, LENGTH = 0x00000110
-    FLASH(rx): ORIGIN = 0x08000110, LENGTH = 0x00005EF0
+    FLASH(rx): ORIGIN = 0x08000114, LENGTH = 0x00005EEC
     SRAM(rwx): ORIGIN = 0x20000000, LENGTH = 0x00002800
 }
 
@@ -43,6 +43,7 @@ SECTIONS
 
     .data :
     {
+   *(.BootAppFlags)
     _sdata_ram = .;
     *(.data)
     . = ALIGN(4);

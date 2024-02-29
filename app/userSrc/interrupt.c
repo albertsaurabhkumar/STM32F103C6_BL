@@ -147,3 +147,4 @@ uint32_t vectorTable[] __attribute__ ((section (".intvec"))) = {
      (uint32_t) 0,
      (uint32_t) 0xF108F85F,                                       /* SCG bus interrupt request*/
 };
+

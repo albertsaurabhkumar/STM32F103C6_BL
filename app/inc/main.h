@@ -39,6 +39,9 @@ typedef enum {
   GetData,
   TransferDone,
   Ack,
+  ReadStatus,
+  EraseApp,
+  init,
 }state_machin_t;
 
 int main(void);

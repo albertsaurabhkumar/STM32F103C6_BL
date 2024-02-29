@@ -315,8 +315,8 @@ int rcc_osc_ready_int_flag(enum rcc_osc osc)
 		return ((RCC_CIR & RCC_CIR_LSIRDYF) != 0);
 		break;
 	}
-
-	cm3_assert_not_reached();
+	return 0; /* Changed to avoid error uncomment the below line of needed and also include the assert.c file */
+	//cm3_assert_not_reached();
 }
 
 /*---------------------------------------------------------------------------*/
